@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/db";
 import { PromptGrid } from "@/components/prompts/prompt-grid";
 import { Search } from "lucide-react";
