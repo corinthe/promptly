@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  avatarUrl String?
+  role      String   @default("READER") // ADMIN, EDITOR, READER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  prompts          Prompt[]
+  promptVersions   PromptVersion[]
+  collections      Collection[]
+  favorites        Favorite[]
+  submittedApprovals ApprovalRequest[] @relation("SubmittedBy")
+  reviewedApprovals  ApprovalRequest[] @relation("ReviewedBy")
+  teamMembers      TeamMember[]
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  prompts     Prompt[]
+  teamMembers TeamMember[]
+}
+
+model TeamMember {
+  userId String
+  teamId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team   Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  prompts Prompt[]
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  prompts PromptTag[]
+}
+
+model Prompt {
+  id           String   @id @default(uuid())
+  authorId     String
+  categoryId   String?
+  teamId       String?
+  forkedFromId String?
+
+  title       String
+  slug        String  @unique
+  description String
+  status      String  @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED, PUBLISHED, ARCHIVED
+
+  currentVersionId String?
+
+  viewCount     Int @default(0)
+  copyCount     Int @default(0)
+  favoriteCount Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  author     User            @relation(fields: [authorId], references: [id])
+  category   Category?       @relation(fields: [categoryId], references: [id])
+  team       Team?           @relation(fields: [teamId], references: [id])
+  forkedFrom Prompt?         @relation("PromptFork", fields: [forkedFromId], references: [id])
+  forks      Prompt[]        @relation("PromptFork")
+  versions   PromptVersion[]
+  tags       PromptTag[]
+  favorites  Favorite[]
+  approvals  ApprovalRequest[]
+  collectionItems CollectionPrompt[]
+}
+
+model PromptVersion {
+  id            String   @id @default(uuid())
+  promptId      String
+  versionNumber Int
+  authorId      String
+
+  content        String // le corps du prompt/template
+  useCases       String? // cas d'usage
+  inputExamples  String? // exemples d'input
+  outputExamples String? // exemples d'output
+  instructions   String? // instructions d'utilisation
+  notes          String? // changelog de cette version
+
+  createdAt DateTime @default(now())
+
+  prompt   Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  author   User   @relation(fields: [authorId], references: [id])
+  approvals ApprovalRequest[]
+
+  @@unique([promptId, versionNumber])
+}
+
+model PromptTag {
+  promptId String
+  tagId    String
+  prompt   Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([promptId, tagId])
+}
+
+model ApprovalRequest {
+  id            String    @id @default(uuid())
+  promptId      String
+  versionId     String
+  submittedById String
+  reviewedById  String?
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewNote    String?
+  createdAt     DateTime  @default(now())
+  reviewedAt    DateTime?
+
+  prompt      Prompt        @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  version     PromptVersion @relation(fields: [versionId], references: [id])
+  submittedBy User          @relation("SubmittedBy", fields: [submittedById], references: [id])
+  reviewedBy  User?         @relation("ReviewedBy", fields: [reviewedById], references: [id])
+}
+
+model Favorite {
+  userId    String
+  promptId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@id([userId, promptId])
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  creatorId   String
+  name        String
+  description String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator User               @relation(fields: [creatorId], references: [id])
+  items   CollectionPrompt[]
+}
+
+model CollectionPrompt {
+  collectionId String
+  promptId     String
+  sortOrder    Int    @default(0)
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  prompt     Prompt     @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, promptId])
+}
