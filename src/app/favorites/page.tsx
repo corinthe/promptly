@@ -1,4 +1,32 @@
-export default function FavoritesPage() {
+export const dynamic = "force-dynamic";
+
+import { prisma } from "@/lib/db";
+import { FavoritesList } from "./favorites-list";
+
+export default async function FavoritesPage() {
+  // Fetch all favorites for all role-users (client will filter by current role)
+  const allFavorites = await prisma.favorite.findMany({
+    include: {
+      prompt: {
+        include: {
+          author: true,
+          category: true,
+          tags: { include: { tag: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Group by userId
+  const favoritesByUser: Record<string, typeof allFavorites> = {};
+  for (const fav of allFavorites) {
+    if (!favoritesByUser[fav.userId]) {
+      favoritesByUser[fav.userId] = [];
+    }
+    favoritesByUser[fav.userId].push(fav);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -7,11 +35,7 @@ export default function FavoritesPage() {
           Retrouvez vos prompts favoris
         </p>
       </div>
-      <div className="rounded-lg border border-dashed p-12 text-center">
-        <p className="text-muted-foreground">
-          Les favoris seront disponibles prochainement.
-        </p>
-      </div>
+      <FavoritesList favoritesByUser={favoritesByUser} />
     </div>
   );
 }

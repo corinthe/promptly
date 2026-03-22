@@ -35,6 +35,13 @@ export default async function PromptDetailPage({
 
   const currentVersion = prompt.versions[0];
 
+  // Check which role users have favorited this prompt
+  const favorites = await prisma.favorite.findMany({
+    where: { promptId: prompt.id },
+    select: { userId: true },
+  });
+  const favoritedByUserIds = favorites.map((f) => f.userId);
+
   // Increment view count
   await prisma.prompt.update({
     where: { id: prompt.id },
@@ -60,6 +67,7 @@ export default async function PromptDetailPage({
             promptId={prompt.id}
             favoriteCount={prompt.favoriteCount}
             content={currentVersion?.content ?? ""}
+            favoritedByUserIds={favoritedByUserIds}
           />
         </div>
 
