@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Copy, Eye, Heart, User, Calendar, GitFork } from "lucide-react";
+import { ArrowLeft, Eye, Heart, User, Calendar, GitFork } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PromptDetailActions } from "./prompt-detail-actions";
 
 export default async function PromptDetailPage({
   params,
@@ -56,16 +56,11 @@ export default async function PromptDetailPage({
             <h1 className="text-3xl font-bold tracking-tight">{prompt.title}</h1>
             <p className="text-muted-foreground">{prompt.description}</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Heart className="h-4 w-4 mr-1" />
-              {prompt.favoriteCount}
-            </Button>
-            <Button variant="outline" size="sm">
-              <GitFork className="h-4 w-4 mr-1" />
-              Fork
-            </Button>
-          </div>
+          <PromptDetailActions
+            promptId={prompt.id}
+            favoriteCount={prompt.favoriteCount}
+            content={currentVersion?.content ?? ""}
+          />
         </div>
 
         {prompt.forkedFrom && (
@@ -90,9 +85,6 @@ export default async function PromptDetailPage({
           <span className="flex items-center gap-1">
             <Eye className="h-4 w-4" /> {prompt.viewCount} vues
           </span>
-          <span className="flex items-center gap-1">
-            <Copy className="h-4 w-4" /> {prompt.copyCount} copies
-          </span>
           {prompt._count.forks > 0 && (
             <span className="flex items-center gap-1">
               <GitFork className="h-4 w-4" /> {prompt._count.forks} forks
@@ -116,13 +108,7 @@ export default async function PromptDetailPage({
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Contenu du prompt</CardTitle>
-                <Button size="sm" variant="default">
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copier
-                </Button>
-              </div>
+              <CardTitle className="text-lg">Contenu du prompt</CardTitle>
             </CardHeader>
             <CardContent>
               <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm font-mono">

@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Clock, User } from "lucide-react";
+import { ApprovalActions } from "./approval-actions";
 
 export default async function ApprovalsPage() {
   const pendingApprovals = await prisma.approvalRequest.findMany({
@@ -63,16 +63,7 @@ export default async function ApprovalsPage() {
                   {approval.version.content.slice(0, 300)}
                   {approval.version.content.length > 300 && "..."}
                 </pre>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm">
-                    <XCircle className="h-4 w-4 mr-1" />
-                    Rejeter
-                  </Button>
-                  <Button size="sm">
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Approuver
-                  </Button>
-                </div>
+                <ApprovalActions approvalId={approval.id} />
               </CardContent>
             </Card>
           ))}
