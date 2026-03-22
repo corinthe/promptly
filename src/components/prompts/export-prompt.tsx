@@ -19,18 +19,16 @@ type ExportData = {
 };
 
 function toMarkdown(data: ExportData): string {
-  let md = `# ${data.title}\n\n`;
-  md += `> ${data.description}\n\n`;
-  md += `**Auteur** : ${data.author}  \n`;
-  if (data.category) md += `**Catégorie** : ${data.category}  \n`;
-  if (data.tags.length > 0) md += `**Tags** : ${data.tags.join(", ")}  \n`;
-  md += `**Version** : ${data.version}\n\n`;
-  md += `---\n\n`;
-  md += `## Contenu du prompt\n\n\`\`\`\n${data.content}\n\`\`\`\n\n`;
-  if (data.useCases) md += `## Cas d'usage\n\n${data.useCases}\n\n`;
-  if (data.inputExamples) md += `## Exemples d'input\n\n\`\`\`\n${data.inputExamples}\n\`\`\`\n\n`;
-  if (data.outputExamples) md += `## Exemples d'output\n\n\`\`\`\n${data.outputExamples}\n\`\`\`\n\n`;
-  if (data.instructions) md += `## Instructions d'utilisation\n\n${data.instructions}\n`;
+  const frontmatterFields: string[] = [];
+  frontmatterFields.push(`title: ${JSON.stringify(data.title)}`);
+  if (data.description) frontmatterFields.push(`description: ${JSON.stringify(data.description)}`);
+  if (data.author) frontmatterFields.push(`author: ${JSON.stringify(data.author)}`);
+  if (data.category) frontmatterFields.push(`category: ${JSON.stringify(data.category)}`);
+  if (data.tags.length > 0) frontmatterFields.push(`tags:\n${data.tags.map((t) => `  - ${t}`).join("\n")}`);
+  if (data.version) frontmatterFields.push(`version: ${data.version}`);
+
+  let md = `---\n${frontmatterFields.join("\n")}\n---\n\n`;
+  md += data.content;
   return md;
 }
 
