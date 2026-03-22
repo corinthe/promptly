@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { CategoriesView } from "./categories-view";
 
 export default async function CategoriesPage() {
   const categories = await prisma.category.findMany({
@@ -18,32 +17,7 @@ export default async function CategoriesPage() {
           Gérez les catégories de prompts
         </p>
       </div>
-
-      {categories.length > 0 ? (
-        <div className="grid gap-3">
-          {categories.map((cat) => (
-            <Card key={cat.id}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div>
-                  <p className="font-medium">{cat.name}</p>
-                  {cat.description && (
-                    <p className="text-sm text-muted-foreground">{cat.description}</p>
-                  )}
-                </div>
-                <Badge variant="secondary">
-                  {cat._count.prompts} prompt{cat._count.prompts !== 1 ? "s" : ""}
-                </Badge>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-lg border border-dashed p-12 text-center">
-          <p className="text-muted-foreground">
-            Aucune catégorie créée pour le moment.
-          </p>
-        </div>
-      )}
+      <CategoriesView categories={categories} />
     </div>
   );
 }

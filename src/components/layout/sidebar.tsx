@@ -11,6 +11,7 @@ import {
   Plus,
   FolderOpen,
   Heart,
+  BarChart3,
   ShieldCheck,
   Tags,
   Users,
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Rechercher", href: "/prompts?focus=search", icon: Search },
   { name: "Collections", href: "/collections", icon: FolderOpen },
   { name: "Favoris", href: "/favorites", icon: Heart },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];
 
 const adminNavigation = [

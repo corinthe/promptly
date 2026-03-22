@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Copy, Eye, Heart, User, Calendar, GitFork } from "lucide-react";
+import { ArrowLeft, Eye, Heart, User, Calendar, GitFork, Star } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PromptDetailActions } from "./prompt-detail-actions";
+import { PromptPlayground } from "@/components/prompts/prompt-playground";
+import { StarRating } from "@/components/prompts/star-rating";
+import { VersionHistory } from "@/components/prompts/version-history";
+import { ExportPrompt } from "@/components/prompts/export-prompt";
 
 export default async function PromptDetailPage({
   params,
@@ -21,7 +25,6 @@ export default async function PromptDetailPage({
       tags: { include: { tag: true } },
       versions: {
         orderBy: { versionNumber: "desc" },
-        take: 1,
         include: { author: true },
       },
       forkedFrom: { select: { title: true, slug: true } },
@@ -35,11 +38,52 @@ export default async function PromptDetailPage({
 
   const currentVersion = prompt.versions[0];
 
+  // Fetch favorites and user ratings
+  const [favorites, ratings] = await Promise.all([
+    prisma.favorite.findMany({
+      where: { promptId: prompt.id },
+      select: { userId: true },
+    }),
+    prisma.rating.findMany({
+      where: { promptId: prompt.id },
+      select: { userId: true, score: true },
+    }),
+  ]);
+  const favoritedByUserIds = favorites.map((f) => f.userId);
+  const ratingsMap = Object.fromEntries(ratings.map((r) => [r.userId, r.score]));
+
   // Increment view count
   await prisma.prompt.update({
     where: { id: prompt.id },
     data: { viewCount: { increment: 1 } },
   });
+
+  // Prepare export data
+  const exportData = currentVersion
+    ? {
+        title: prompt.title,
+        description: prompt.description,
+        category: prompt.category?.name ?? null,
+        tags: prompt.tags.map(({ tag }) => tag.name),
+        author: prompt.author.name,
+        version: currentVersion.versionNumber,
+        content: currentVersion.content,
+        useCases: currentVersion.useCases,
+        inputExamples: currentVersion.inputExamples,
+        outputExamples: currentVersion.outputExamples,
+        instructions: currentVersion.instructions,
+      }
+    : null;
+
+  // Serialize versions for client component
+  const allVersions = prompt.versions.map((v) => ({
+    id: v.id,
+    versionNumber: v.versionNumber,
+    content: v.content,
+    notes: v.notes,
+    createdAt: v.createdAt.toISOString(),
+    author: { name: v.author.name },
+  }));
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -56,15 +100,14 @@ export default async function PromptDetailPage({
             <h1 className="text-3xl font-bold tracking-tight">{prompt.title}</h1>
             <p className="text-muted-foreground">{prompt.description}</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Heart className="h-4 w-4 mr-1" />
-              {prompt.favoriteCount}
-            </Button>
-            <Button variant="outline" size="sm">
-              <GitFork className="h-4 w-4 mr-1" />
-              Fork
-            </Button>
+          <div className="flex items-center gap-2">
+            {exportData && <ExportPrompt data={exportData} />}
+            <PromptDetailActions
+              promptId={prompt.id}
+              favoriteCount={prompt.favoriteCount}
+              content={currentVersion?.content ?? ""}
+              favoritedByUserIds={favoritedByUserIds}
+            />
           </div>
         </div>
 
@@ -76,6 +119,13 @@ export default async function PromptDetailPage({
             </Link>
           </p>
         )}
+
+        <StarRating
+          promptId={prompt.id}
+          currentAvg={prompt.ratingAvg}
+          currentCount={prompt.ratingCount}
+          userRating={null}
+        />
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -89,9 +139,6 @@ export default async function PromptDetailPage({
           </span>
           <span className="flex items-center gap-1">
             <Eye className="h-4 w-4" /> {prompt.viewCount} vues
-          </span>
-          <span className="flex items-center gap-1">
-            <Copy className="h-4 w-4" /> {prompt.copyCount} copies
           </span>
           {prompt._count.forks > 0 && (
             <span className="flex items-center gap-1">
@@ -116,13 +163,7 @@ export default async function PromptDetailPage({
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Contenu du prompt</CardTitle>
-                <Button size="sm" variant="default">
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copier
-                </Button>
-              </div>
+              <CardTitle className="text-lg">Contenu du prompt</CardTitle>
             </CardHeader>
             <CardContent>
               <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm font-mono">
@@ -130,6 +171,8 @@ export default async function PromptDetailPage({
               </pre>
             </CardContent>
           </Card>
+
+          <PromptPlayground content={currentVersion.content} />
 
           {currentVersion.useCases && (
             <Card>
@@ -178,6 +221,11 @@ export default async function PromptDetailPage({
               </CardContent>
             </Card>
           )}
+
+          <VersionHistory
+            versions={allVersions}
+            currentVersionNumber={currentVersion.versionNumber}
+          />
 
           <div className="text-xs text-muted-foreground">
             Version {currentVersion.versionNumber} • Mis à jour le{" "}
