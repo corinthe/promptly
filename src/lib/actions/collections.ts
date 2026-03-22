@@ -3,6 +3,22 @@
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
+const USER_NAMES: Record<string, { name: string; role: string }> = {
+  "user-admin": { name: "Alice Martin", role: "ADMIN" },
+  "user-editor": { name: "Bob Dupont", role: "EDITOR" },
+  "user-reader": { name: "Claire Bernard", role: "READER" },
+};
+
+async function ensureUser(userId: string) {
+  const existing = await prisma.user.findUnique({ where: { id: userId } });
+  if (existing) return existing;
+  const info = USER_NAMES[userId];
+  if (!info) throw new Error("Utilisateur inconnu");
+  return prisma.user.create({
+    data: { id: userId, name: info.name, role: info.role },
+  });
+}
+
 export async function createCollection(formData: FormData) {
   const creatorId = formData.get("creatorId") as string;
   const name = formData.get("name") as string;
@@ -11,6 +27,8 @@ export async function createCollection(formData: FormData) {
   if (!creatorId || !name) {
     throw new Error("Champs obligatoires manquants");
   }
+
+  await ensureUser(creatorId);
 
   await prisma.collection.create({
     data: { name, description, creatorId },
