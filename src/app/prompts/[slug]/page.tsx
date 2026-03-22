@@ -104,6 +104,9 @@ export default async function PromptDetailPage({
             {exportData && <ExportPrompt data={exportData} />}
             <PromptDetailActions
               promptId={prompt.id}
+              promptSlug={prompt.slug}
+              promptStatus={prompt.status}
+              promptAuthorId={prompt.authorId}
               favoriteCount={prompt.favoriteCount}
               content={currentVersion?.content ?? ""}
               favoritedByUserIds={favoritedByUserIds}

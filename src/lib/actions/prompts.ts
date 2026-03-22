@@ -164,6 +164,46 @@ export async function rejectPrompt(formData: FormData) {
   revalidatePath("/prompts");
 }
 
+export async function submitDraftPrompt(formData: FormData) {
+  const promptId = formData.get("promptId") as string;
+  const userId = formData.get("userId") as string;
+
+  if (!promptId || !userId) {
+    throw new Error("Paramètres manquants");
+  }
+
+  await ensureUser(userId);
+
+  const prompt = await prisma.prompt.findUnique({
+    where: { id: promptId },
+    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+  });
+
+  if (!prompt || prompt.status !== "DRAFT") {
+    throw new Error("Prompt introuvable ou non brouillon");
+  }
+
+  await prisma.prompt.update({
+    where: { id: promptId },
+    data: { status: "SUBMITTED" },
+  });
+
+  if (prompt.versions[0]) {
+    await prisma.approvalRequest.create({
+      data: {
+        promptId,
+        versionId: prompt.versions[0].id,
+        submittedById: userId,
+      },
+    });
+  }
+
+  revalidatePath(`/prompts/${prompt.slug}`);
+  revalidatePath("/prompts");
+  revalidatePath("/admin/approvals");
+  revalidatePath("/my-prompts");
+}
+
 export async function copyPrompt(formData: FormData) {
   const promptId = formData.get("promptId") as string;
 
