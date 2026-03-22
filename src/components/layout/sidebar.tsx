@@ -15,10 +15,12 @@ import {
   ShieldCheck,
   Tags,
   Users,
+  FileText,
 } from "lucide-react";
 
 const navigation = [
   { name: "Catalogue", href: "/prompts", icon: LayoutGrid },
+  { name: "Mes prompts", href: "/my-prompts", icon: FileText },
   { name: "Rechercher", href: "/prompts?focus=search", icon: Search },
   { name: "Collections", href: "/collections", icon: FolderOpen },
   { name: "Favoris", href: "/favorites", icon: Heart },
