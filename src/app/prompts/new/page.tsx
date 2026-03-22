@@ -207,10 +207,10 @@ export default function NewPromptPage() {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="submit" name="action" value="draft" variant="outline">
+          <Button type="submit" name="intent" value="draft" variant="outline">
             Sauvegarder comme brouillon
           </Button>
-          <Button type="submit" name="action" value="submit">
+          <Button type="submit" name="intent" value="submit">
             Soumettre pour approbation
           </Button>
         </div>

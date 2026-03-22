@@ -4,6 +4,22 @@ import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+const USER_NAMES: Record<string, { name: string; role: string }> = {
+  "user-admin": { name: "Alice Martin", role: "ADMIN" },
+  "user-editor": { name: "Bob Dupont", role: "EDITOR" },
+  "user-reader": { name: "Claire Bernard", role: "READER" },
+};
+
+async function ensureUser(userId: string) {
+  const existing = await prisma.user.findUnique({ where: { id: userId } });
+  if (existing) return existing;
+  const info = USER_NAMES[userId];
+  if (!info) throw new Error("Utilisateur inconnu");
+  return prisma.user.create({
+    data: { id: userId, name: info.name, role: info.role },
+  });
+}
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -24,17 +40,19 @@ export async function createPrompt(formData: FormData) {
   const inputExamples = (formData.get("inputExamples") as string) || null;
   const outputExamples = (formData.get("outputExamples") as string) || null;
   const instructions = (formData.get("instructions") as string) || null;
-  const action = formData.get("action") as string; // "draft" or "submit"
+  const intent = formData.get("intent") as string; // "draft" or "submit"
 
   if (!userId || !title || !description || !content) {
     throw new Error("Champs obligatoires manquants");
   }
 
+  await ensureUser(userId);
+
   const baseSlug = slugify(title);
   const existing = await prisma.prompt.findUnique({ where: { slug: baseSlug } });
   const slug = existing ? `${baseSlug}-${Date.now()}` : baseSlug;
 
-  const status = action === "submit" ? "SUBMITTED" : "DRAFT";
+  const status = intent === "submit" ? "SUBMITTED" : "DRAFT";
 
   const prompt = await prisma.prompt.create({
     data: {
@@ -92,6 +110,8 @@ export async function approvePrompt(formData: FormData) {
     throw new Error("Paramètres manquants");
   }
 
+  await ensureUser(reviewerId);
+
   const approval = await prisma.approvalRequest.update({
     where: { id: approvalId },
     data: {
@@ -122,6 +142,8 @@ export async function rejectPrompt(formData: FormData) {
   if (!approvalId || !reviewerId) {
     throw new Error("Paramètres manquants");
   }
+
+  await ensureUser(reviewerId);
 
   const approval = await prisma.approvalRequest.update({
     where: { id: approvalId },
@@ -164,6 +186,8 @@ export async function forkPrompt(formData: FormData) {
   if (!promptId || !userId) {
     throw new Error("Paramètres manquants");
   }
+
+  await ensureUser(userId);
 
   const original = await prisma.prompt.findUnique({
     where: { id: promptId },
