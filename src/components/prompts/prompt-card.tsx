@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Copy, Heart, User } from "lucide-react";
+import { Eye, Copy, Heart, User, Star } from "lucide-react";
 import type { Prompt, User as UserType, Category, PromptTag, Tag } from "@/generated/prisma/client";
 
 type PromptWithRelations = Prompt & {
@@ -73,6 +73,11 @@ export function PromptCard({ prompt }: { prompt: PromptWithRelations }) {
               <span className="flex items-center gap-1">
                 <Heart className="h-3 w-3" /> {prompt.favoriteCount}
               </span>
+              {prompt.ratingCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> {prompt.ratingAvg.toFixed(1)}
+                </span>
+              )}
             </div>
           </div>
         </CardFooter>

@@ -19,6 +19,7 @@ model User {
   promptVersions   PromptVersion[]
   collections      Collection[]
   favorites        Favorite[]
+  ratings          Rating[]
   submittedApprovals ApprovalRequest[] @relation("SubmittedBy")
   reviewedApprovals  ApprovalRequest[] @relation("ReviewedBy")
   teamMembers      TeamMember[]
@@ -77,9 +78,11 @@ model Prompt {
 
   currentVersionId String?
 
-  viewCount     Int @default(0)
-  copyCount     Int @default(0)
-  favoriteCount Int @default(0)
+  viewCount     Int   @default(0)
+  copyCount     Int   @default(0)
+  favoriteCount Int   @default(0)
+  ratingAvg     Float @default(0)
+  ratingCount   Int   @default(0)
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -93,6 +96,7 @@ model Prompt {
   versions   PromptVersion[]
   tags       PromptTag[]
   favorites  Favorite[]
+  ratings    Rating[]
   approvals  ApprovalRequest[]
   collectionItems CollectionPrompt[]
 }
@@ -143,6 +147,19 @@ model ApprovalRequest {
   version     PromptVersion @relation(fields: [versionId], references: [id])
   submittedBy User          @relation("SubmittedBy", fields: [submittedById], references: [id])
   reviewedBy  User?         @relation("ReviewedBy", fields: [reviewedById], references: [id])
+}
+
+model Rating {
+  userId    String
+  promptId  String
+  score     Int      // 1-5
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@id([userId, promptId])
 }
 
 model Favorite {
